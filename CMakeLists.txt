@@ -2,33 +2,41 @@ cmake_minimum_required(VERSION 3.5)
 
 set( CMAKE_CXX_STANDARD 14 )
 
+option(FINGERA_USE_MMX "Enable MMX" OFF)
+option(FINGERA_USE_SSE2 "Enable SSE2" OFF)
+option(FINGERA_USE_AVX2 "Enable AVX2" OFF)
+option(FINGERA_USE_AVX512F "Enable AVX512F" OFF)
+set(FINGERA_AUTO_DETECT true)
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-include(DetectCPUFeatures)
+if (${FINGERA_AUTO_DETECT})
+    message("Detecting cpu features ...")
+    include(DetectCPUFeatures)
+    detect_cpu_features()
+endif()
 
-detect_cpu_features()
+if (${FINGERA_USE_AVX2} STREQUAL "ON")
+    add_compile_options("-mavx2")
+endif()
+if (${FINGERA_USE_AVX512F} STREQUAL "ON")
+    add_compile_options("-mavx512f")
+endif()
 
-message("FINGERA_HAS_SSE2: " ${FINGERA_HAS_SSE2})
-message("FINGERA_HAS_AVX2: " ${FINGERA_HAS_AVX2})
-message("FINGERA_HAS_AVX512F: " ${FINGERA_HAS_AVX512F})
-
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_LIBS OFF)
-set(BOOST_ALL_DYN_LINK ON)
-add_definitions(-DBOOST_ALL_DYN_LINK=1)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/fingera/config.hpp.in 
+    ${CMAKE_CURRENT_BINARY_DIR}/include/fingera/config.hpp)
 
 find_package(Boost REQUIRED COMPONENTS
-	thread
+    thread
     unit_test_framework
 )
-
-add_compile_options("-mavx2")
 
 add_library(fingera 
     src/cpu_features.cpp
 )
 
-target_link_libraries(fingera)
-target_include_directories(fingera PUBLIC include)
+target_link_libraries(fingera pthread)
+target_include_directories(fingera PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 add_subdirectory(tests)
+add_subdirectory(benchmark)

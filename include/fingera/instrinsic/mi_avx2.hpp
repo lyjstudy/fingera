@@ -1,5 +1,9 @@
 #pragma once
 
+#include <fingera/config.hpp>
+
+#if defined(FINGERA_USE_AVX2)
+
 #include <cstdint>
 #include <functional>
 #include <immintrin.h>
@@ -109,3 +113,5 @@ public:
 
 } // namespace instrinsic
 } // namespace fingera
+
+#endif // FINGERA_USE_AVX2

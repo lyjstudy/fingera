@@ -3,6 +3,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <iostream>
+#include <fingera/config.hpp>
 #include <fingera/multiway_integer.hpp>
 #include <fingera/hex.hpp>
 #include <fingera/instrinsic/mi_sse2.hpp>
@@ -150,12 +151,14 @@ BOOST_AUTO_TEST_CASE(base) {
         BOOST_CHECK_EQUAL(to_hex(result + 32, 32), hashes[i * 2 + 1]);
     }
     for (size_t i = 0; i < 2; i++) {
+#if defined(FINGERA_USE_SSE2)
         memset(result, 0, sizeof(result));
         hash::multiway_sha256<instrinsic::mi_sse2>::process_trunk(result, sha256_blocks + i * 64 * 4);
         BOOST_CHECK_EQUAL(to_hex(result, 32), hashes[i * 4]);
         BOOST_CHECK_EQUAL(to_hex(result + 32 * 1, 32), hashes[i * 4 + 1]);
         BOOST_CHECK_EQUAL(to_hex(result + 32 * 2, 32), hashes[i * 4 + 2]);
         BOOST_CHECK_EQUAL(to_hex(result + 32 * 3, 32), hashes[i * 4 + 3]);
+#endif
         memset(result, 0, sizeof(result));
         hash::multiway_sha256<multiway_integer_slow<uint32_t, 4>>::process_trunk(result, sha256_blocks + i * 64 * 4);
         BOOST_CHECK_EQUAL(to_hex(result, 32), hashes[i * 4]);
@@ -164,11 +167,13 @@ BOOST_AUTO_TEST_CASE(base) {
         BOOST_CHECK_EQUAL(to_hex(result + 32 * 3, 32), hashes[i * 4 + 3]);
     }
 
+#if defined(FINGERA_USE_AVX2)
     memset(result, 0, sizeof(result));
     hash::multiway_sha256<instrinsic::mi_avx2>::process_trunk(result, sha256_blocks);
     for (size_t i = 0; i < 8; i++) {
         BOOST_CHECK_EQUAL(to_hex(result + 32 * i, 32), hashes[i]);
     }
+#endif
 }
 
 BOOST_AUTO_TEST_SUITE_END()

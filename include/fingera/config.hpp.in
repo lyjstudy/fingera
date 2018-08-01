@@ -1,0 +1,9 @@
+#pragma once
+
+#cmakedefine FINGERA_USE_MMX
+
+#cmakedefine FINGERA_USE_SSE2
+
+#cmakedefine FINGERA_USE_AVX2
+
+#cmakedefine FINGERA_USE_AVX512F
