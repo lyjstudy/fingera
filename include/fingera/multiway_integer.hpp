@@ -20,13 +20,6 @@ class multiway_integer {
     } access_stub;
     static_assert(sizeof(access_stub) == sizeof(ImplType), "add pack(1)");
 
-    static inline ImplType _for_each(std::function<void (TargetType &)> Op) {
-        access_stub r;
-        for (int i = 0; i < way(); i++) {
-            Op(r.stub[i]);
-        }
-        return r.value;
-    }
     static inline ImplType _for_each(std::function<void (TargetType &, TargetType)> Op,
                             ImplType x) {
         access_stub r;
@@ -56,9 +49,11 @@ public:
     }
 
     static inline impl_type op_broadcast(target_type value) {
-        return _for_each([&](target_type &val) {
-            val = value;
-        });
+        access_stub r;
+        for (int i = 0; i < way(); i++) {
+            r.stub[i] = value;
+        }
+        return r.value;
     }
 
     static inline impl_type op_add(impl_type x, impl_type y) {
