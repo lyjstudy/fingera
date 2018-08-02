@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <fingera/config.hpp>
 
 namespace fingera {
 namespace hash {
@@ -10,76 +11,76 @@ class multiway_sha256 {
 public:
     using type = typename Instr::type;
 protected:
-    static inline type _broadcast(uint32_t x) {
+    static FINGERA_FORCEINLINE type _broadcast(uint32_t x) {
         return Instr::op_broadcast(x);
     }
 
-    static inline type _add(type x) {
+    static FINGERA_FORCEINLINE type _add(type x) {
         return x;
     }
     template<typename ...Args>
-    static inline type _add(type x, Args... rest) {
+    static FINGERA_FORCEINLINE type _add(type x, Args... rest) {
         return Instr::op_add(x, _add(rest...));
     }
     template<typename ...Args>
-    static inline type _inc(type &x, Args... rest) {
+    static FINGERA_FORCEINLINE type _inc(type &x, Args... rest) {
         x = _add(x, rest...);
         return x;
     }
 
-    static inline type _xor(type x, type y) {
+    static FINGERA_FORCEINLINE type _xor(type x, type y) {
         return Instr::op_xor(x, y);
     }
-    static inline type _xor(type x, type y, type z) {
+    static FINGERA_FORCEINLINE type _xor(type x, type y, type z) {
         return _xor(_xor(x, y), z);
     }
 
-    static inline type _or(type x, type y) {
+    static FINGERA_FORCEINLINE type _or(type x, type y) {
         return Instr::op_or(x, y);
     }
-    static inline type _and(type x, type y) {
+    static FINGERA_FORCEINLINE type _and(type x, type y) {
         return Instr::op_and(x, y);
     }
 
     template<int N>
-    static inline type _shr(type x) {
+    static FINGERA_FORCEINLINE type _shr(type x) {
         return Instr::template op_shr<N>(x);
     }
     template<int N>
-    static inline type _shl(type x) {
+    static FINGERA_FORCEINLINE type _shl(type x) {
         return Instr::template op_shl<N>(x);
     }
     template<int N>
-    static inline type _rol(type x) {
+    static FINGERA_FORCEINLINE type _rol(type x) {
         return Instr::template op_rol<N>(x);
     }
 protected:
-    static inline type Ch(type x, type y, type z) {
+    static FINGERA_FORCEINLINE type Ch(type x, type y, type z) {
         // z ^ (x & (y ^ z))
         return _xor(z, _and(x, _xor(y, z)));
     }
-    static inline type Maj(type x, type y, type z) {
+    static FINGERA_FORCEINLINE type Maj(type x, type y, type z) {
         // (x & y) | (z & (x | y))
         return _or(_and(x, y), _and(z, _or(x, y)));
     }
-    static inline type Sigma0(type x) {
+    static FINGERA_FORCEINLINE type Sigma0(type x) {
         // (x >> 2 | x << 30) ^ (x >> 13 | x << 19) ^ (x >> 22 | x << 10)
         return _xor(_rol<30>(x), _rol<19>(x), _rol<10>(x));
     }
-    static inline type Sigma1(type x) {
+    static FINGERA_FORCEINLINE type Sigma1(type x) {
         // (x >> 6 | x << 26) ^ (x >> 11 | x << 21) ^ (x >> 25 | x << 7);
         return _xor(_rol<26>(x), _rol<21>(x), _rol<7>(x));
     }
-    static inline type sigma0(type x) {
+    static FINGERA_FORCEINLINE type sigma0(type x) {
         // (x >> 7 | x << 25) ^ (x >> 18 | x << 14) ^ (x >> 3)
         return _xor(_rol<25>(x), _rol<14>(x), _shr<3>(x));
     }
-    static inline type sigma1(type x) {
+    static FINGERA_FORCEINLINE type sigma1(type x) {
         // (x >> 17 | x << 15) ^ (x >> 19 | x << 13) ^ (x >> 10)
         return _xor(_rol<15>(x), _rol<13>(x), _shr<10>(x));
     }
 
-    static inline void round(type a, type b, type c, type& d, type e, type f, type g, type& h, type k) {
+    static FINGERA_FORCEINLINE void round(type a, type b, type c, type& d, type e, type f, type g, type& h, type k) {
         /*
             uint32_t t1 = h + Sigma1(e) + Ch(e, f, g) + k;
             uint32_t t2 = Sigma0(a) + Maj(a, b, c);
@@ -92,7 +93,7 @@ protected:
         h = _add(t1, t2);
     }
 public:
-    static inline void process_block(
+    static FINGERA_FORCEINLINE void process_block(
             type &a, type &b, type &c, type &d, 
             type &e, type &f, type &g, type &h,
             const void *block) {
@@ -198,7 +199,7 @@ public:
         h = _add(h, oh);
     }
 
-    static void process_trunk(void *out, const void *blocks, int count = 1) {
+    static FINGERA_NOINLINE void process_trunk(void *out, const void *blocks, int count = 1) {
         type a = _broadcast(0x6a09e667ul);
         type b = _broadcast(0xbb67ae85ul);
         type c = _broadcast(0x3c6ef372ul);

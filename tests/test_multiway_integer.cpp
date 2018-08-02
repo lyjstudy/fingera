@@ -4,8 +4,6 @@
 
 #include <iostream>
 
-#include <fingera/cpu_features.hpp>
-
 BOOST_AUTO_TEST_SUITE(multiway_integer_tests)
 
 BOOST_AUTO_TEST_CASE(base) {
@@ -15,14 +13,6 @@ BOOST_AUTO_TEST_CASE(base) {
     BOOST_CHECK_EQUAL(u64_u8_integer::op_add(0x1F1F1F1F1F1F1F1Full, 0x0101010101010101ull), 0x2020202020202020ull);
     BOOST_CHECK_EQUAL(u64_u8_integer::op_add(0x1F1F1F1F1F1F1F1Full, 0xF1F1F1F1F1F1F1F1ull), 0x1010101010101010ull);
     BOOST_CHECK_EQUAL(u64_u8_integer::op_xor(0x1F1F1F1F1F1F1F1Full, 0x0101010101010101ull), 0x1E1E1E1E1E1E1E1Eull);
-
-    std::unordered_map<std::string, bool> features;
-    get_cpu_features(features);
-    for (auto i = features.begin(); i != features.end(); ++i) {
-        if (i->second) {
-            std::cout << i->first << std::endl;
-        }
-    }
 
     uint8_t left[] = {
         1, 2, 3, 4, 5, 6, 7, 8,

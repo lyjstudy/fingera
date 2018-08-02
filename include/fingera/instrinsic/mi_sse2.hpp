@@ -21,46 +21,46 @@ public:
     using impl_type = __m128i;
     using target_type = uint32_t;
 
-    static inline constexpr int way() {
+    static FINGERA_FORCEINLINE constexpr int way() {
         return sizeof(impl_type) / sizeof(target_type);
     }
 
-    static inline impl_type op_broadcast(target_type value) {
+    static FINGERA_FORCEINLINE impl_type op_broadcast(target_type value) {
         return _mm_set1_epi32(value);
     }
 
-    static inline impl_type op_add(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_add(impl_type x, impl_type y) {
         return _mm_add_epi32(x, y);
     }
 
-    static inline impl_type op_xor(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_xor(impl_type x, impl_type y) {
         return _mm_xor_si128(x, y);
     }
-    static inline impl_type op_or(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_or(impl_type x, impl_type y) {
         return _mm_or_si128(x, y);
     }
-    static inline impl_type op_and(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_and(impl_type x, impl_type y) {
         return _mm_and_si128(x, y);
     }
-    static inline impl_type op_andnot(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_andnot(impl_type x, impl_type y) {
         return _mm_andnot_si128(x, y);
     }
 
     template<int N>
-    static inline impl_type op_shr(impl_type x) {
+    static FINGERA_FORCEINLINE impl_type op_shr(impl_type x) {
         return _mm_srli_epi32(x, N);
     }
     template<int N>
-    static inline impl_type op_shl(impl_type x) {
+    static FINGERA_FORCEINLINE impl_type op_shl(impl_type x) {
         return _mm_slli_epi32(x, N);
     }
     template<int N>
-    static inline impl_type op_rol(impl_type x) {
+    static FINGERA_FORCEINLINE impl_type op_rol(impl_type x) {
         return op_or(op_shl<N>(x), op_shr<32 - N>(x));
     }
 
     template<bool ReadLittleEndian = true>
-    static inline impl_type load(const void *mem, size_t blk_size, size_t offset) {
+    static FINGERA_FORCEINLINE impl_type load(const void *mem, size_t blk_size, size_t offset) {
         const char *ptr = static_cast<const char *>(mem) + offset;
         if (ReadLittleEndian) {
             return _mm_set_epi32(
@@ -78,7 +78,7 @@ public:
         );
     }
     template<bool WriteLittleEndian = true>
-    static inline void save(impl_type value, void *out, size_t blk_size, size_t offset) {
+    static FINGERA_FORCEINLINE void save(impl_type value, void *out, size_t blk_size, size_t offset) {
         union {
             __m128i mm;
             uint32_t data[4];

@@ -7,3 +7,9 @@
 #cmakedefine FINGERA_USE_AVX2
 
 #cmakedefine FINGERA_USE_AVX512F
+
+#if defined(_MSC_VER)
+    #define FINGERA_FORCEINLINE __forceinline
+#else
+    #define FINGERA_FORCEINLINE __attribute__((always_inline))
+#endif

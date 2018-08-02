@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <fingera/endian.hpp>
+#include <fingera/config.hpp>
 
 namespace fingera {
 
@@ -14,41 +14,22 @@ class multiway_integer {
         ImplType value;
         TargetType stub[sizeof(ImplType) / sizeof(TargetType)];
 
-        inline void set(TargetType val, int &idx) {
+        FINGERA_FORCEINLINE void set(TargetType val, int &idx) {
             stub[idx++] = val;
         }
     } access_stub;
     static_assert(sizeof(access_stub) == sizeof(ImplType), "add pack(1)");
 
-    static inline ImplType _for_each(std::function<void (TargetType &, TargetType)> Op,
-                            ImplType x) {
-        access_stub r;
-        access_stub *px = reinterpret_cast<access_stub *>(&x);
-        for (int i = 0; i < way(); i++) {
-            Op(r.stub[i], px->stub[i]);
-        }
-        return r.value;
-    }
-    static inline ImplType _for_each(std::function<void (TargetType &, TargetType, TargetType)> Op,
-                            ImplType x, ImplType y) {
-        access_stub r;
-        access_stub *px = reinterpret_cast<access_stub *>(&x);
-        access_stub *py = reinterpret_cast<access_stub *>(&y);
-        for (int i = 0; i < way(); i++) {
-            Op(r.stub[i], px->stub[i], py->stub[i]);
-        }
-        return r.value;
-    }
 public:
     using type = ImplType;
     using impl_type = ImplType;
     using target_type = TargetType;
 
-    static inline constexpr int way() {
+    static FINGERA_FORCEINLINE constexpr int way() {
         return sizeof(ImplType) / sizeof(TargetType);
     }
 
-    static inline impl_type op_broadcast(target_type value) {
+    static FINGERA_FORCEINLINE impl_type op_broadcast(target_type value) {
         access_stub r;
         for (int i = 0; i < way(); i++) {
             r.stub[i] = value;
@@ -56,45 +37,55 @@ public:
         return r.value;
     }
 
-    static inline impl_type op_add(impl_type x, impl_type y) {
-        return _for_each([](target_type &val, target_type x, target_type y) {
-            val = x + y;
-        }, x, y);
+    static FINGERA_FORCEINLINE impl_type op_add(impl_type x, impl_type y) {
+        access_stub *px = reinterpret_cast<access_stub *>(&x);
+        access_stub *py = reinterpret_cast<access_stub *>(&y);
+        for (int i = 0; i < way(); i++) {
+            px->stub[i] += py->stub[i];
+        }
+        return px->value;
     }
-    static inline impl_type op_xor(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_xor(impl_type x, impl_type y) {
         return x ^ y;
     }
-    static inline impl_type op_or(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_or(impl_type x, impl_type y) {
         return x | y;
     }
-    static inline impl_type op_and(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_and(impl_type x, impl_type y) {
         return x & y;
     }
-    static inline impl_type op_andnot(impl_type x, impl_type y) {
+    static FINGERA_FORCEINLINE impl_type op_andnot(impl_type x, impl_type y) {
         return ~x & y;
     }
 
     template<int N>
-    static inline impl_type op_shr(impl_type x) {
-        return _for_each([&](target_type &val, target_type x) {
-            val = x >> N;
-        }, x);
+    static FINGERA_FORCEINLINE impl_type op_shr(impl_type x) {
+        access_stub *px = reinterpret_cast<access_stub *>(&x);
+        for (int i = 0; i < way(); i++) {
+            px->stub[i] >>= N;
+        }
+        return px->value;
     }
     template<int N>
-    static inline impl_type op_shl(impl_type x) {
-        return _for_each([&](target_type &val, target_type x) {
-            val = x << N;
-        }, x);
+    static FINGERA_FORCEINLINE impl_type op_shl(impl_type x) {
+        access_stub *px = reinterpret_cast<access_stub *>(&x);
+        for (int i = 0; i < way(); i++) {
+            px->stub[i] <<= N;
+        }
+        return px->value;
     }
     template<int N>
-    static inline impl_type op_rol(impl_type x) {
-        return _for_each([&](target_type &val, target_type x) {
-            val = (x << N) | (x >> (sizeof(target_type) * 8 - N));
-        }, x);
+    static FINGERA_FORCEINLINE impl_type op_rol(impl_type x) {
+        access_stub *px = reinterpret_cast<access_stub *>(&x);
+        for (int i = 0; i < way(); i++) {
+            auto v = px->stub[i];
+            px->stub[i] = (v << N) | (v >> (sizeof(target_type) * 8 - N));
+        }
+        return px->value;
     }
 
     template<bool ReadLittleEndian = true>
-    static inline impl_type load(const void *mem, size_t blk_size, size_t offset) {
+    static FINGERA_FORCEINLINE impl_type load(const void *mem, size_t blk_size, size_t offset) {
         const char *ptr = static_cast<const char *>(mem) + offset;
         access_stub r;
         for (int i = 0; i < way(); i++) {
@@ -107,7 +98,7 @@ public:
         return r.value;
     }
     template<bool WriteLittleEndian = true>
-    static inline void save(impl_type value, void *out, size_t blk_size, size_t offset) {
+    static FINGERA_FORCEINLINE void save(impl_type value, void *out, size_t blk_size, size_t offset) {
         access_stub *pvalue = reinterpret_cast<access_stub *>(&value);
         char *ptr = static_cast<char *>(out) + offset;
         for (int i = 0; i < way(); i++) {
@@ -129,56 +120,56 @@ public:
     class data_wrap {
     public:
         DataType stub[WayCount];
-        inline data_wrap() {
+        FINGERA_FORCEINLINE data_wrap() {
         }
-        inline data_wrap(DataType value) {
+        FINGERA_FORCEINLINE data_wrap(DataType value) {
             for (int i = 0; i < WayCount; i++)
                 stub[i] = value;
         }
-        inline data_wrap(const data_wrap &other) {
+        FINGERA_FORCEINLINE data_wrap(const data_wrap &other) {
             memcpy(stub, other.stub, sizeof(stub));
         }
-        inline data_wrap &operator=(const data_wrap &other) {
+        FINGERA_FORCEINLINE data_wrap &operator=(const data_wrap &other) {
             memcpy(stub, other.stub, sizeof(stub));
             return *this;
         }
-        inline data_wrap &op_add(const data_wrap &other) {
+        FINGERA_FORCEINLINE data_wrap &op_add(const data_wrap &other) {
             for (int i = 0; i < WayCount; i++) {
                 stub[i] += other.stub[i];
             }
             return *this;
         }
-        inline data_wrap &op_xor(const data_wrap &other) {
+        FINGERA_FORCEINLINE data_wrap &op_xor(const data_wrap &other) {
             for (int i = 0; i < WayCount; i++) {
                 stub[i] ^= other.stub[i];
             }
             return *this;
         }
-        inline data_wrap &op_or(const data_wrap &other) {
+        FINGERA_FORCEINLINE data_wrap &op_or(const data_wrap &other) {
             for (int i = 0; i < WayCount; i++) {
                 stub[i] |= other.stub[i];
             }
             return *this;
         }
-        inline data_wrap &op_and(const data_wrap &other) {
+        FINGERA_FORCEINLINE data_wrap &op_and(const data_wrap &other) {
             for (int i = 0; i < WayCount; i++) {
                 stub[i] &= other.stub[i];
             }
             return *this;
         }
-        inline data_wrap &op_not() {
+        FINGERA_FORCEINLINE data_wrap &op_not() {
             for (int i = 0; i < WayCount; i++) {
                 stub[i] = ~stub[i];
             }
             return *this;
         }
-        inline data_wrap &op_shr(int cnt) {
+        FINGERA_FORCEINLINE data_wrap &op_shr(int cnt) {
             for (int i = 0; i < WayCount; i++) {
                 stub[i] >>= cnt;
             }
             return *this;
         }
-        inline data_wrap &op_shl(int cnt) {
+        FINGERA_FORCEINLINE data_wrap &op_shl(int cnt) {
             for (int i = 0; i < WayCount; i++) {
                 stub[i] <<= cnt;
             }
@@ -189,47 +180,47 @@ public:
     using used_type = UsedType;
 public:
 
-    static inline constexpr int way() {
+    static FINGERA_FORCEINLINE constexpr int way() {
         return WayCount;
     }
 
-    static inline type op_broadcast(used_type value) {
+    static FINGERA_FORCEINLINE type op_broadcast(used_type value) {
         return type(value);
     }
 
-    static inline type op_add(type x, type y) {
+    static FINGERA_FORCEINLINE type op_add(type x, type y) {
         return x.op_add(y);
     }
-    static inline type op_xor(type x, type y) {
+    static FINGERA_FORCEINLINE type op_xor(type x, type y) {
         return x.op_xor(y);
     }
-    static inline type op_or(type x, type y) {
+    static FINGERA_FORCEINLINE type op_or(type x, type y) {
         return x.op_or(y);
     }
-    static inline type op_and(type x, type y) {
+    static FINGERA_FORCEINLINE type op_and(type x, type y) {
         return x.op_and(y);
     }
-    static inline type op_andnot(type x, type y) {
+    static FINGERA_FORCEINLINE type op_andnot(type x, type y) {
         return x.op_not().op_and(y);
     }
 
     template<int N>
-    static inline type op_shr(type x) {
+    static FINGERA_FORCEINLINE type op_shr(type x) {
         return x.op_shr(N);
     }
     template<int N>
-    static inline type op_shl(type x) {
+    static FINGERA_FORCEINLINE type op_shl(type x) {
         return x.op_shl(N);
     }
     template<int N>
-    static inline type op_rol(type x) {
+    static FINGERA_FORCEINLINE type op_rol(type x) {
         type right = op_shr<sizeof(used_type) * 8 - N>(x);
         type left = op_shl<N>(x);
         return left.op_or(right);
     }
 
     template<bool ReadLittleEndian = true>
-    static inline type load(const void *mem, size_t blk_size, size_t offset) {
+    static FINGERA_FORCEINLINE type load(const void *mem, size_t blk_size, size_t offset) {
         const char *ptr = static_cast<const char *>(mem) + offset;
         type r;
         for (int i = 0; i < way(); i++) {
@@ -242,7 +233,7 @@ public:
         return r;
     }
     template<bool WriteLittleEndian = true>
-    static inline void save(type value, void *out, size_t blk_size, size_t offset) {
+    static FINGERA_FORCEINLINE void save(type value, void *out, size_t blk_size, size_t offset) {
         char *ptr = static_cast<char *>(out) + offset;
         for (int i = 0; i < way(); i++) {
             if (WriteLittleEndian) {

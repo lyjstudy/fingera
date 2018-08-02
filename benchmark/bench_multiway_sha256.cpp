@@ -59,7 +59,7 @@ static void SHA256_8_way_avx2(benchmark::State& state) {
 BENCHMARK(SHA256_8_way_avx2);
 #endif
 
-void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks);
+void FINGERA_NOINLINE Transform(uint32_t* s, const unsigned char* chunk, size_t blocks);
 static void SHA256_1_way_cpp(benchmark::State& state) {
     uint8_t blocks[64];
     uint8_t s[64];
@@ -88,7 +88,7 @@ void inline Round(uint32_t a, uint32_t b, uint32_t c, uint32_t& d, uint32_t e, u
 }
 
 /** Perform a number of SHA-256 transformations, processing 64-byte chunks. */
-void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks)
+void FINGERA_NOINLINE Transform(uint32_t* s, const unsigned char* chunk, size_t blocks)
 {
     while (blocks--) {
         uint32_t a = s[0], b = s[1], c = s[2], d = s[3], e = s[4], f = s[5], g = s[6], h = s[7];
