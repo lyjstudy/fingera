@@ -26,7 +26,6 @@ if (${FINGERA_USE_AVX512F} STREQUAL "ON")
     add_compile_options("-mavx512f")
 endif()
 if (${FINGERA_ENABLE_BENCHMARK} STREQUAL "ON")
-# FIXME gcc add more flags
     add_compile_options("-Ofast")
 endif()
 
@@ -34,16 +33,17 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/fingera/config.hpp.in 
     ${CMAKE_CURRENT_BINARY_DIR}/include/fingera/config.hpp)
 
-find_package(Boost REQUIRED COMPONENTS
+find_package(Boost 1.67 REQUIRED COMPONENTS
     thread
     unit_test_framework
 )
 
 add_library(fingera 
     src/cpu_features.cpp
+    src/ocl/device.cpp
 )
 
-target_link_libraries(fingera pthread)
+target_link_libraries(fingera pthread OpenCL)
 target_include_directories(fingera PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (${FINGERA_ENABLE_UNIT_TESTS} STREQUAL "ON")

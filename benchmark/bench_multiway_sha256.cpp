@@ -8,66 +8,71 @@
 
 using namespace fingera;
 
-static void SHA256_1_way_generic(benchmark::State& state) {
-    uint8_t blocks[64];
-    uint8_t result[32];
+template<typename T>
+static void SHA256_1000(benchmark::State& state) {
+    uint8_t blocks[64 * 16];
+    uint8_t result[32 * 16];
     for (auto _ : state) {
-        hash::multiway_sha256<multiway_integer<uint32_t, uint32_t>>::process_trunk(result, blocks);
+        for (int i = 0; i < 1000; i++) {
+            T::process_trunk(result, blocks);
+        }
     }
 }
-BENCHMARK(SHA256_1_way_generic);
 
-static void SHA256_2_way_generic(benchmark::State& state) {
-    uint8_t blocks[64 * 2];
-    uint8_t result[32 * 2];
-    for (auto _ : state) {
-        hash::multiway_sha256<multiway_integer<uint32_t, uint64_t>>::process_trunk(result, blocks);
-    }
-}
-BENCHMARK(SHA256_2_way_generic);
-
+using generic_1_way = hash::multiway_sha256<multiway_integer<uint32_t, uint32_t>>;
+using generic_2_way = hash::multiway_sha256<multiway_integer<uint32_t, uint64_t>>;
+using slow_1_way = hash::multiway_sha256<multiway_integer_slow<uint32_t, 1>>;
+using slow_2_way = hash::multiway_sha256<multiway_integer_slow<uint32_t, 2>>;
+using slow_4_way = hash::multiway_sha256<multiway_integer_slow<uint32_t, 4>>;
+using slow_8_way = hash::multiway_sha256<multiway_integer_slow<uint32_t, 8>>;
+using slow_16_way = hash::multiway_sha256<multiway_integer_slow<uint32_t, 16>>;
+BENCHMARK_TEMPLATE(SHA256_1000, generic_1_way);
+BENCHMARK_TEMPLATE(SHA256_1000, generic_2_way);
+BENCHMARK_TEMPLATE(SHA256_1000, slow_1_way);
+BENCHMARK_TEMPLATE(SHA256_1000, slow_2_way);
+BENCHMARK_TEMPLATE(SHA256_1000, slow_4_way);
+BENCHMARK_TEMPLATE(SHA256_1000, slow_8_way);
+BENCHMARK_TEMPLATE(SHA256_1000, slow_16_way);
 #if defined(FINGERA_USE_MMX)
-static void SHA256_2_way_mmx(benchmark::State& state) {
-    uint8_t blocks[64 * 2];
-    uint8_t result[32 * 2];
-    for (auto _ : state) {
-        hash::multiway_sha256<instrinsic::mi_mmx>::process_trunk(result, blocks);
-    }
-}
-BENCHMARK(SHA256_2_way_mmx);
+using mmx_2_way = hash::multiway_sha256<instrinsic::mi_mmx>;
+BENCHMARK_TEMPLATE(SHA256_1000, mmx_2_way);
 #endif
-
 #if defined(FINGERA_USE_SSE2)
-static void SHA256_4_way_sse2(benchmark::State& state) {
-    uint8_t blocks[64 * 4];
-    uint8_t result[32 * 4];
-    for (auto _ : state) {
-        hash::multiway_sha256<instrinsic::mi_sse2>::process_trunk(result, blocks);
-    }
-}
-BENCHMARK(SHA256_4_way_sse2);
+using sse2_4_way = hash::multiway_sha256<instrinsic::mi_sse2>;
+BENCHMARK_TEMPLATE(SHA256_1000, sse2_4_way);
 #endif
-
 #if defined(FINGERA_USE_AVX2)
-static void SHA256_8_way_avx2(benchmark::State& state) {
-    uint8_t blocks[64 * 8];
-    uint8_t result[32 * 8];
-    for (auto _ : state) {
-        hash::multiway_sha256<instrinsic::mi_avx2>::process_trunk(result, blocks);
-    }
-}
-BENCHMARK(SHA256_8_way_avx2);
+using avx2_8_way = hash::multiway_sha256<instrinsic::mi_avx2>;
+BENCHMARK_TEMPLATE(SHA256_1000, avx2_8_way);
 #endif
 
-void FINGERA_NOINLINE Transform(uint32_t* s, const unsigned char* chunk, size_t blocks);
-static void SHA256_1_way_cpp(benchmark::State& state) {
-    uint8_t blocks[64];
-    uint8_t s[64];
-    for (auto _ : state) {
-        Transform((uint32_t *)s, blocks, 1);
+
+void inline Transform(uint32_t* s, const unsigned char* chunk, size_t blocks);
+class external_sha256 {
+public:
+    static FINGERA_NOINLINE void process_trunk(void *out, const void *blocks, int count = 1) {
+        uint32_t state[] = {
+            0x6a09e667ul,
+            0xbb67ae85ul,
+            0x3c6ef372ul,
+            0xa54ff53aul,
+            0x510e527ful,
+            0x9b05688cul,
+            0x1f83d9abul,
+            0x5be0cd19ul,
+        };
+        Transform(state, static_cast<const unsigned char*>(blocks), count);
+        write_big(static_cast<char *>(out) + 0, state[0]);
+        write_big(static_cast<char *>(out) + 4, state[1]);
+        write_big(static_cast<char *>(out) + 8, state[2]);
+        write_big(static_cast<char *>(out) + 12, state[3]);
+        write_big(static_cast<char *>(out) + 16, state[4]);
+        write_big(static_cast<char *>(out) + 20, state[5]);
+        write_big(static_cast<char *>(out) + 24, state[6]);
+        write_big(static_cast<char *>(out) + 28, state[7]);
     }
-}
-BENCHMARK(SHA256_1_way_cpp);
+};
+BENCHMARK_TEMPLATE(SHA256_1000, external_sha256);
 
 
 /////////////////////////////////////
@@ -88,7 +93,7 @@ void inline Round(uint32_t a, uint32_t b, uint32_t c, uint32_t& d, uint32_t e, u
 }
 
 /** Perform a number of SHA-256 transformations, processing 64-byte chunks. */
-void FINGERA_NOINLINE Transform(uint32_t* s, const unsigned char* chunk, size_t blocks)
+void inline Transform(uint32_t* s, const unsigned char* chunk, size_t blocks)
 {
     while (blocks--) {
         uint32_t a = s[0], b = s[1], c = s[2], d = s[3], e = s[4], f = s[5], g = s[6], h = s[7];

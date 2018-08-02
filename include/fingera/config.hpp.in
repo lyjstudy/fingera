@@ -10,6 +10,8 @@
 
 #if defined(_MSC_VER)
     #define FINGERA_FORCEINLINE __forceinline
+    #define FINGERA_NOINLINE __declspec(noinline)
 #else
     #define FINGERA_FORCEINLINE __attribute__((always_inline))
+    #define FINGERA_NOINLINE __attribute__((noinline))
 #endif
