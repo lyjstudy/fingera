@@ -1,14 +1,58 @@
 #include <iostream>
 #include <fingera/ocl/device.hpp>
-#include <boost/compute/device.hpp>
+#include <fingera/hex.hpp>
+#include <boost/compute/buffer.hpp>
 #include <boost/compute/platform.hpp>
 #include <boost/compute/system.hpp>
 
-using bcc = boost::compute::device;
-using bcs = boost::compute::system;
+namespace bc = boost::compute;
+using bcc = bc::device;
+using bcs = bc::system;
+
+const char *sha256CL =
+        #include "./sha256.cl"
+;
 
 namespace fingera {
 namespace ocl {
+
+void test_device() {
+    auto device = bcs::default_device();
+    bc::context context(device);
+    bc::command_queue queue(context, device);
+
+    auto program = bc::program::create_with_source(sha256CL, context);
+    program.build();
+    bc::kernel kernel(program, "sha256_process_trunk");
+
+    bc::buffer chunk(context, 64, bc::memory_object::mem_flags::read_only);
+    bc::buffer digest(context, 32, bc::memory_object::mem_flags::write_only);
+    kernel.set_arg(0, chunk);
+    kernel.set_arg(1, digest);
+
+    uint8_t sha256_single_block[] = {
+        // data
+        0x30,
+        // pad
+        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // length
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08,
+    };
+    size_t global_work_size = 1;
+    size_t local_work_size = 1;
+    queue.enqueue_write_buffer(chunk, 0, sizeof(sha256_single_block), sha256_single_block);
+    queue.enqueue_1d_range_kernel(kernel, 0, global_work_size, local_work_size);
+    queue.finish();
+    uint8_t data[32];
+    queue.enqueue_read_buffer(digest, 0, 32, data);
+    std::cout << fingera::to_hex(data, 32);
+}
 
 static void dump_device(const bcc &dev, const std::string &prefix = "") {
     std::cout << prefix << "name: " << dev.name() << std::endl;

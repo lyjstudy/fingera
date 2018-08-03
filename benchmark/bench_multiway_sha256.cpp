@@ -6,7 +6,43 @@
 #include <fingera/instrinsic/mi_avx2.hpp>
 #include <fingera/instrinsic/mi_mmx.hpp>
 
+#include <boost/compute/buffer.hpp>
+#include <boost/compute/platform.hpp>
+#include <boost/compute/system.hpp>
+
 using namespace fingera;
+
+extern const char *sha256CL;
+static void SHA256_OCL_1000(benchmark::State& state) {
+    uint8_t blocks[64];
+    uint8_t result[32];
+
+    namespace bc = boost::compute;
+    using bcc = bc::device;
+    using bcs = bc::system;
+
+    auto device = bcs::default_device();
+    bc::context context(device);
+    bc::command_queue queue(context, device);
+
+    auto program = bc::program::create_with_source(sha256CL, context);
+    program.build();
+    bc::kernel kernel(program, "sha256_process_trunk");
+
+    bc::buffer chunk(context, 64, bc::memory_object::mem_flags::read_only);
+    bc::buffer digest(context, 32, bc::memory_object::mem_flags::write_only);
+    kernel.set_arg(0, chunk);
+    kernel.set_arg(1, digest);
+
+    size_t global_work_size = 1;
+    size_t local_work_size = 1;
+    for (auto _ : state) {
+        queue.enqueue_write_buffer(chunk, 0, sizeof(blocks), blocks);
+        queue.enqueue_1d_range_kernel(kernel, 0, global_work_size, local_work_size);
+        queue.finish();
+    }
+}
+BENCHMARK(SHA256_OCL_1000);
 
 template<typename T>
 static void SHA256_1000(benchmark::State& state) {
