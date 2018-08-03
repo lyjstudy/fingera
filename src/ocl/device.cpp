@@ -4,6 +4,9 @@
 #include <boost/compute/buffer.hpp>
 #include <boost/compute/platform.hpp>
 #include <boost/compute/system.hpp>
+#include <boost/compute/container/vector.hpp>
+#include <boost/compute/utility/source.hpp>
+#include <boost/compute/utility/dim.hpp>
 
 namespace bc = boost::compute;
 using bcc = bc::device;
@@ -23,6 +26,7 @@ void test_device() {
 
     auto program = bc::program::create_with_source(sha256CL, context);
     program.build();
+    std::cout << program.build_log() << std::endl;
     bc::kernel kernel(program, "sha256_process_trunk");
 
     bc::buffer chunk(context, 64, bc::memory_object::mem_flags::read_only);
@@ -44,15 +48,15 @@ void test_device() {
         // length
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08,
     };
-    size_t global_work_size = 64;
+    constexpr size_t global_work_size = 64;
     size_t local_work_size = 1;
     queue.enqueue_write_buffer(chunk, 0, sizeof(sha256_single_block), sha256_single_block);
     queue.enqueue_1d_range_kernel(kernel, 0, global_work_size, local_work_size);
     queue.finish();
-    uint8_t data[32 * 100];
+    uint8_t data[32 * global_work_size];
     memset(data, 0, sizeof(data));
     queue.enqueue_read_buffer(digest, 0, sizeof(data), data);
-    for (size_t i = 0; i < 66; i++) {
+    for (size_t i = 0; i < global_work_size; i++) {
         std::cout << fingera::to_hex(data + i * 32, 32) << std::endl;
     }
 }
