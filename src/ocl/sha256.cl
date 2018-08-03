@@ -18,6 +18,8 @@ inline void Round(uint a, uint b, uint c, uint* d, uint e, uint f, uint g, uint*
 #define swap_byte(x) ( ((x) << 24) | (((x) << 8) & 0x00ff0000) | (((x) >> 8) & 0x0000ff00) | ((x) >> 24) )
 
 __kernel void sha256_process_trunk(__global uint *chunk, __global uint *digest){
+    uint global_id = get_global_id(0);
+
     uint a = 0x6a09e667;
     uint b = 0xbb67ae85;
     uint c = 0x3c6ef372;
@@ -29,7 +31,10 @@ __kernel void sha256_process_trunk(__global uint *chunk, __global uint *digest){
 
     uint w0, w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14, w15;
 
-    Round(a, b, c, &d, e, f, g, &h, 0x428a2f98 + (w0 = swap_byte(chunk[0])));
+    w0 = swap_byte(chunk[0]);
+    w0 += (global_id << 24);
+
+    Round(a, b, c, &d, e, f, g, &h, 0x428a2f98 + (w0));
     Round(h, a, b, &c, d, e, f, &g, 0x71374491 + (w1 = swap_byte(chunk[1])));
     Round(g, h, a, &b, c, d, e, &f, 0xb5c0fbcf + (w2 = swap_byte(chunk[2])));
     Round(f, g, h, &a, b, c, d, &e, 0xe9b5dba5 + (w3 = swap_byte(chunk[3])));
@@ -97,14 +102,14 @@ __kernel void sha256_process_trunk(__global uint *chunk, __global uint *digest){
     Round(c, d, e, &f, g, h, a, &b, 0xbef9a3f7 + (w14 + sigma1(w12) + w7 + sigma0(w15)));
     Round(b, c, d, &e, f, g, h, &a, 0xc67178f2 + (w15 + sigma1(w13) + w8 + sigma0(w0)));
 
-    digest[0] = swap_byte(a + 0x6a09e667);
-    digest[1] = swap_byte(b + 0xbb67ae85);
-    digest[2] = swap_byte(c + 0x3c6ef372);
-    digest[3] = swap_byte(d + 0xa54ff53a);
-    digest[4] = swap_byte(e + 0x510e527f);
-    digest[5] = swap_byte(f + 0x9b05688c);
-    digest[6] = swap_byte(g + 0x1f83d9ab);
-    digest[7] = swap_byte(h + 0x5be0cd19);
+    digest[0 + global_id * 8] = swap_byte(a + 0x6a09e667);
+    digest[1 + global_id * 8] = swap_byte(b + 0xbb67ae85);
+    digest[2 + global_id * 8] = swap_byte(c + 0x3c6ef372);
+    digest[3 + global_id * 8] = swap_byte(d + 0xa54ff53a);
+    digest[4 + global_id * 8] = swap_byte(e + 0x510e527f);
+    digest[5 + global_id * 8] = swap_byte(f + 0x9b05688c);
+    digest[6 + global_id * 8] = swap_byte(g + 0x1f83d9ab);
+    digest[7 + global_id * 8] = swap_byte(h + 0x5be0cd19);
 }
 
 )==="

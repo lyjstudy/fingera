@@ -15,7 +15,7 @@ using namespace fingera;
 extern const char *sha256CL;
 static void SHA256_OCL_1000(benchmark::State& state) {
     uint8_t blocks[64];
-    uint8_t result[32];
+    uint8_t result[32 * 1000];
 
     namespace bc = boost::compute;
     using bcc = bc::device;
@@ -34,7 +34,7 @@ static void SHA256_OCL_1000(benchmark::State& state) {
     kernel.set_arg(0, chunk);
     kernel.set_arg(1, digest);
 
-    size_t global_work_size = 1;
+    size_t global_work_size = 1000;
     size_t local_work_size = 1;
     for (auto _ : state) {
         queue.enqueue_write_buffer(chunk, 0, sizeof(blocks), blocks);
