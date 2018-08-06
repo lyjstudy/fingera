@@ -13,6 +13,8 @@ option(FINGERA_ENABLE_UNIT_TESTS "Unit tests" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+include(cotire)
+
 if (${FINGERA_AUTO_INSTRINSIC} STREQUAL "ON")
     message("Detecting cpu features ...")
     include(DetectCPUFeatures)
@@ -49,6 +51,7 @@ add_library(fingera
 
 target_link_libraries(fingera pthread OpenCL ${Boost_LIBRARIES})
 target_include_directories(fingera PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
+cotire(fingera)
 
 if (${FINGERA_ENABLE_UNIT_TESTS} STREQUAL "ON")
     add_subdirectory(tests)
