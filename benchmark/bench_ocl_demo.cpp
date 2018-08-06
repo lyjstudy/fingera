@@ -31,13 +31,15 @@ static void TEST_OCL_VECTOR(benchmark::State& state) {
     auto context = bcs::default_context();
     auto kernel = bc::kernel::create_with_source(vector_func, "test_entry", context);
 
-    size_t thread_count = 64;
-    bc::vector<bc::uint_> output(thread_count * 16, context);
-    bc::vector<bc::uint_> input(thread_count * 16, context);
-    kernel.set_arg(0, input);
-    kernel.set_arg(1, output);
+    constexpr size_t thread_count = 1024;
+    bc::buffer chunk(context, thread_count * 16 * 4, bc::memory_object::mem_flags::read_only);
+    bc::buffer digest(context, thread_count * 16 * 4, bc::memory_object::mem_flags::write_only);
+    kernel.set_arg(0, chunk);
+    kernel.set_arg(1, digest);
+    uint8_t blocks[thread_count * 16 * 4];
 
     for (auto _ : state) {
+        queue.enqueue_write_buffer(chunk, 0, sizeof(blocks), blocks);
         queue.enqueue_1d_range_kernel(kernel, (size_t)0, thread_count, (size_t)1);
         queue.finish();
     }
@@ -53,13 +55,15 @@ static void TEST_OCL_SCALER(benchmark::State& state) {
     auto context = bcs::default_context();
     auto kernel = bc::kernel::create_with_source(scaler_func, "test_entry", context);
 
-    size_t thread_count = 1024;
-    bc::vector<bc::uint_> output(thread_count, context);
-    bc::vector<bc::uint_> input(thread_count, context);
-    kernel.set_arg(0, input);
-    kernel.set_arg(1, output);
+    constexpr size_t thread_count = 1024;
+    bc::buffer chunk(context, thread_count * 4, bc::memory_object::mem_flags::read_only);
+    bc::buffer digest(context, thread_count * 4, bc::memory_object::mem_flags::write_only);
+    kernel.set_arg(0, chunk);
+    kernel.set_arg(1, digest);
+    uint8_t blocks[thread_count * 4];
 
     for (auto _ : state) {
+        queue.enqueue_write_buffer(chunk, 0, sizeof(blocks), blocks);
         queue.enqueue_1d_range_kernel(kernel, (size_t)0, thread_count, (size_t)1);
         queue.finish();
     }

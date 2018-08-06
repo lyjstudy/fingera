@@ -33,17 +33,21 @@ endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/fingera/config.hpp.in 
     ${CMAKE_CURRENT_BINARY_DIR}/include/fingera/config.hpp)
 
+set(BOOST_ROOT ~/opt/boost)
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_NO_SYSTEM_PATHS ON)
 find_package(Boost 1.67 REQUIRED COMPONENTS
     thread
     unit_test_framework
 )
+include_directories(${Boost_INCLUDE_DIRS})
 
 add_library(fingera 
     src/cpu_features.cpp
     src/ocl/device.cpp
 )
 
-target_link_libraries(fingera pthread OpenCL)
+target_link_libraries(fingera pthread OpenCL ${Boost_LIBRARIES})
 target_include_directories(fingera PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (${FINGERA_ENABLE_UNIT_TESTS} STREQUAL "ON")

@@ -50,10 +50,15 @@ void test_device() {
     };
     constexpr size_t global_work_size = 64;
     size_t local_work_size = 1;
+    uint8_t data[32 * global_work_size];
     queue.enqueue_write_buffer(chunk, 0, sizeof(sha256_single_block), sha256_single_block);
     queue.enqueue_1d_range_kernel(kernel, 0, global_work_size, local_work_size);
     queue.finish();
-    uint8_t data[32 * global_work_size];
+    memset(data, 0, sizeof(data));
+    queue.enqueue_read_buffer(digest, 0, sizeof(data), data);
+    queue.enqueue_write_buffer(chunk, 0, sizeof(sha256_single_block), sha256_single_block);
+    queue.enqueue_1d_range_kernel(kernel, 0, global_work_size, local_work_size);
+    queue.finish();
     memset(data, 0, sizeof(data));
     queue.enqueue_read_buffer(digest, 0, sizeof(data), data);
     for (size_t i = 0; i < global_work_size; i++) {
