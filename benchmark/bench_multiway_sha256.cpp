@@ -6,12 +6,13 @@
 #include <fingera/instrinsic/mi_avx2.hpp>
 #include <fingera/instrinsic/mi_mmx.hpp>
 
-#include <boost/compute/buffer.hpp>
-#include <boost/compute/platform.hpp>
-#include <boost/compute/system.hpp>
 
 using namespace fingera;
 
+#if 0
+#include <boost/compute/buffer.hpp>
+#include <boost/compute/platform.hpp>
+#include <boost/compute/system.hpp>
 extern const char *sha256CL;
 static void SHA256_OCL_1000(benchmark::State& state) {
     uint8_t blocks[64];
@@ -43,6 +44,7 @@ static void SHA256_OCL_1000(benchmark::State& state) {
     }
 }
 BENCHMARK(SHA256_OCL_1000);
+#endif
 
 template<typename T>
 static void SHA256_1000(benchmark::State& state) {

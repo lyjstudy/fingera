@@ -40,13 +40,18 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_NO_SYSTEM_PATHS ON)
 find_package(Boost 1.67 REQUIRED COMPONENTS
     thread
+    system
+    regex
+    date_time
+    serialization
     unit_test_framework
 )
 include_directories(${Boost_INCLUDE_DIRS})
 
 add_library(fingera 
     src/cpu_features.cpp
-    src/ocl/device.cpp
+    src/stratum/client.cpp
+#    src/ocl/device.cpp
 )
 
 target_link_libraries(fingera pthread OpenCL ${Boost_LIBRARIES})
