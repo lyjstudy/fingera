@@ -28,9 +28,14 @@ if (${FINGERA_USE_AVX512F} STREQUAL "ON")
     add_compile_options("-mavx512f")
 endif()
 if (${FINGERA_ENABLE_BENCHMARK} STREQUAL "ON")
-    add_compile_options("-Ofast")
+    add_compile_options("-Ofast" "-DNDEBUG")
 endif()
 
+if (${FINGERA_USE_AES} STREQUAL "ON")
+    add_compile_options("-maes")
+endif()
+
+add_compile_options("-mbmi2")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/fingera/config.hpp.in 
     ${CMAKE_CURRENT_BINARY_DIR}/include/fingera/config.hpp)
@@ -51,6 +56,23 @@ include_directories(${Boost_INCLUDE_DIRS})
 add_library(fingera 
     src/cpu_features.cpp
     src/stratum/client.cpp
+    
+    src/hash/monero.cpp
+# monero
+    src/hash/monero/blake256.c
+    src/hash/monero/groestl.c
+    src/hash/monero/jh.c
+    src/hash/monero/keccak.c
+    src/hash/monero/skein.c
+    src/hash/monero/oaes_lib.c
+    src/hash/monero/slow-hash.c
+    src/hash/monero/aesb.c
+    src/hash/monero/hash.c
+    src/hash/monero/hash-extra-blake.c
+    src/hash/monero/hash-extra-groestl.c
+    src/hash/monero/hash-extra-jh.c
+    src/hash/monero/hash-extra-skein.c
+    
 #    src/ocl/device.cpp
 )
 
